@@ -1,26 +1,82 @@
 package lru
 
 import (
-	"fmt"
 	"testing"
 )
 
-func TestCacheEvictsLRUifExceedingCapacity_Insert(t *testing.T) {
-	payload := []string{"a", "b", "c", "d"}
-	capacity := 3
-	cache := NewCache(capacity)
-	for _, item := range payload {
-		cache.Insert(item, true)
+type testNode struct {
+	Key   interface{}
+	Value interface{}
+}
+
+func testCacheSizeEquals(t *testing.T, c *Cache, expectedSize int) bool {
+	t.Helper()
+
+	if c.Size() != uint(expectedSize) {
+		t.Errorf("wrong cache size. want %d. have %d", expectedSize, c.Size())
+		return false
 	}
-	fmt.Println(cache.Dump())
-	if cache.Size() != capacity {
-		t.Errorf("wrong cache size. want %d. have %d", capacity, cache.Size())
+
+	return true
+}
+
+func testNodeEquals(t *testing.T, en testNode, cn cacheNode) bool {
+	t.Helper()
+
+	if en.Key != cn.key {
+		t.Errorf("keys missmatch. want %v, have %v.", en.Key, cn.key)
+		return false
+	}
+
+	if en.Value != cn.value {
+		t.Errorf("values missmatch. want %v, have %v.", en.Key, cn.key)
+		return false
+	}
+
+	return true
+}
+
+func testCacheStateEquals(t *testing.T, c *Cache, elements []testNode) {
+	t.Helper()
+
+	if !testCacheSizeEquals(t, c, len(elements)) {
+		t.FailNow()
+	}
+
+	for position, actualNode := range c.Nodes() {
+		expectedNode := elements[position]
+
+		testNodeEquals(t, expectedNode, actualNode)
 	}
 }
 
+func newCache(cap uint, initialState []testNode) *Cache {
+	cache := NewCache(cap)
+	for _, item := range initialState {
+		cache.Insert(item.Key, item.Value)
+	}
+	return cache
+}
+
+func TestCacheEvictsLRUifExceedingCapacity_Insert(t *testing.T) {
+	payload := []testNode{
+		{"a", 1},
+		{"b", 2},
+		{"c", 3},
+		{"d", 4},
+	}
+	expectedState := []testNode{
+		{"d", 4},
+		{"c", 3},
+		{"b", 2},
+	}
+	cache := newCache(3, payload)
+	testCacheStateEquals(t, cache, expectedState)
+}
+
 func TestCacheReturnsErrorIfDuplicated_Insert(t *testing.T) {
-	capacity := 3
-	cache := NewCache(capacity)
+	var payload []testNode
+	cache := newCache(3, payload)
 	ok := cache.Insert("a", 1)
 	if !ok {
 		t.Errorf("expected successful insertion. want %t, have %t", true, ok)
@@ -31,27 +87,33 @@ func TestCacheReturnsErrorIfDuplicated_Insert(t *testing.T) {
 	}
 }
 
-func TestCacheAccessAlreadyInsertedKeyRaisesAsHead_Access(t *testing.T) {
-	capacity := 3
-	cache := NewCache(capacity)
-	payloads := []struct {
-		Key   string
-		Value interface{}
-	}{
+func TestCache_Access_UpgradesToHead(t *testing.T) {
+	payload := []testNode{
 		{"a", 1},
 		{"b", 2},
 		{"c", 3},
 	}
-	for _, item := range payloads {
-		cache.Insert(item.Key, item.Value)
+	expectedState := []testNode{
+		{"a", 1},
+		{"c", 3},
+		{"b", 2},
 	}
-	value, err := cache.Access("a") // "a" should be put on top, leaving "b" at the bottom
+	cache := newCache(3, payload)
+	value, _ := cache.Access("a") // "a" should be put on top, leaving "b" at the bottom
+	testCacheStateEquals(t, cache, expectedState)
 	if value != 1 {
 		t.Errorf("wrong value returned. want %d, have %v", 1, value)
 	}
-	cache.Insert("d", 4) // "b" should be evicted
-	_, err = cache.Access("b")
-	if err == nil {
-		t.Error("accessing non-existent key should yield error")
+}
+
+func TestCache_Access_UpgradesToHead_OneElement(t *testing.T) {
+	payload := []testNode{
+		{"a", 1},
 	}
+	expectedState := []testNode{
+		{"a", 1},
+	}
+	cache := newCache(3, payload)
+	_, _ = cache.Access("a")
+	testCacheStateEquals(t, cache, expectedState)
 }
