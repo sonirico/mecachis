@@ -1,14 +1,18 @@
 package lru
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestCacheEvictsLRUifExceedingCapacity_Insert(t *testing.T) {
 	payload := []string{"a", "b", "c", "d"}
 	capacity := 3
-	cache := LRUCache(capacity)
-	for item := range payload {
+	cache := NewCache(capacity)
+	for _, item := range payload {
 		cache.Insert(item, true)
 	}
+	fmt.Println(cache.Dump())
 	if cache.Size() != capacity {
 		t.Errorf("wrong cache size. want %d. have %d", capacity, cache.Size())
 	}
@@ -16,7 +20,7 @@ func TestCacheEvictsLRUifExceedingCapacity_Insert(t *testing.T) {
 
 func TestCacheReturnsErrorIfDuplicated_Insert(t *testing.T) {
 	capacity := 3
-	cache := LRUCache(capacity)
+	cache := NewCache(capacity)
 	ok := cache.Insert("a", 1)
 	if !ok {
 		t.Errorf("expected successful insertion. want %t, have %t", true, ok)
@@ -29,7 +33,7 @@ func TestCacheReturnsErrorIfDuplicated_Insert(t *testing.T) {
 
 func TestCacheAccessAlreadyInsertedKeyRaisesAsHead_Access(t *testing.T) {
 	capacity := 3
-	cache := LRUCache(capacity)
+	cache := NewCache(capacity)
 	payloads := []struct {
 		Key   string
 		Value interface{}
