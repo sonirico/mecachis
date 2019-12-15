@@ -1,8 +1,9 @@
 package lfu
 
+import "mecachis/ds"
+
 type freqNode struct {
-	// TODO: Make a ddl of this
-	items map[cacheKey]*cacheNode
+	set *ds.Set
 	// the value representing the frequency
 	value uint
 	// pointers to compose the dll
@@ -13,7 +14,7 @@ type freqNode struct {
 func newHeadFreqNode() *freqNode {
 	node := &freqNode{
 		value: 0,
-		items: make(map[cacheKey]*cacheNode),
+		set:   ds.NewSet(),
 	}
 	node.prev = nil
 	node.next = newFreqNode(1, node, nil)
@@ -25,30 +26,28 @@ func newFreqNode(value uint, prev, next *freqNode) *freqNode {
 		next:  next,
 		prev:  prev,
 		value: value,
-		items: make(map[cacheKey]*cacheNode),
+		set:   ds.NewSet(),
 	}
 }
 
 func (c *freqNode) Add(node *cacheNode) {
-	c.items[node.key] = node
+	c.set.Add(node)
 }
 
 func (c *freqNode) Remove(node *cacheNode) {
-	delete(c.items, node.key)
+	c.set.Remove(node.key)
 }
 
-// Pop eventually should remove the LRU element from the still
-// unimplemented DLL
 func (c *freqNode) Pop() *cacheNode {
-	if len(c.items) > 0 {
-		for _, first := range c.items {
-			delete(c.items, first.key)
-			return first
-		}
+	if c.set.Length() < 1 {
+		return nil
 	}
-	return nil
+
+	lru := c.set.PopFirst()
+	node, _ := lru.(*cacheNode)
+	return node
 }
 
 func (c *freqNode) Size() int {
-	return len(c.items)
+	return c.set.Length()
 }

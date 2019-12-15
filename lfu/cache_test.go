@@ -137,14 +137,13 @@ func TestCache_Access(t *testing.T) {
 	cache.Access("a")
 	cache.Access("d")
 	cache.Access("d")
-	cache.Insert("e", 5) // should evict b or c
-	cache.Insert("f", 6) // should evict c or b
+	cache.Insert("e", 5) // should evict b
 
 	expectedFreqs := []expectedNode{
 		{"a", 3},
 		{"d", 3},
 		{"e", 1},
-		{"f", 1},
+		{"c", 1},
 	}
 	testCacheFrequencyEquals(t, cache, expectedFreqs)
 }

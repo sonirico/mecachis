@@ -56,6 +56,18 @@ func (s *Set) insertHead(n *node) {
 	s.head.next = n
 }
 
+func (s *Set) removeNode(node *node) {
+	if node == s.foot {
+		s.foot = node.prev
+	}
+	node.prev.next = node.next
+	if node.next != nil {
+		node.next.prev = node.prev
+	}
+	object := node.object
+	delete(s.items, *object)
+}
+
 // Add inserts into the set the new key-value pair. If the key
 // exists already, update the value
 func (s *Set) Add(value interface{}) {
@@ -70,22 +82,13 @@ func (s *Set) Add(value interface{}) {
 
 // Remove erases from the set a pair from a given key. If the
 // provided key exists, the pair is returned. Otherwise, nil.
-func (s *Set) Remove(value interface{}) *object {
+func (s *Set) Remove(value interface{}) {
 	obj := newObject(value)
 	node, ok := s.items[*obj]
 	if !ok {
-		return nil
+		return
 	}
-	if node == s.foot {
-		s.foot = node.prev
-	}
-	node.prev.next = node.next
-	if node.next != nil {
-		node.next.prev = node.prev
-	}
-	object := node.object
-	delete(s.items, *object)
-	return object
+	s.removeNode(node)
 }
 
 // PopFirst removes and returns the first pair that
@@ -94,9 +97,9 @@ func (s *Set) PopFirst() interface{} {
 	if s.foot == s.head {
 		return nil
 	}
-	obj := s.foot.object
-	s.Remove(obj.value)
-	return obj.value
+	value := s.foot.object.value
+	s.removeNode(s.foot)
+	return value
 }
 
 // Elements returns an iterable slice of de-referenced pairs
