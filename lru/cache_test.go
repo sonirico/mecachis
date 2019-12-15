@@ -29,7 +29,7 @@ func testNodeEquals(t *testing.T, en testNode, cn cacheNode) bool {
 	}
 
 	if en.Value != cn.value {
-		t.Errorf("values missmatch. want %v, have %v.", en.Key, cn.key)
+		t.Errorf("values missmatch. want %v, have %v.", en.Value, cn.value)
 		return false
 	}
 

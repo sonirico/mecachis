@@ -84,7 +84,6 @@ func (c *Cache) evict() {
 	nextFoot := c.foot.prev
 	c.removeNode(c.foot)
 	c.foot = nextFoot
-	c.itemsCount--
 	delete(c.items, k)
 }
 
@@ -95,6 +94,7 @@ func (c *Cache) removeNode(node *cacheNode) {
 	if node.next != nil {
 		node.next.prev = node.prev
 	}
+	c.itemsCount--
 }
 
 // Insert puts a key-value pair into the cache. Returns whether the pair
