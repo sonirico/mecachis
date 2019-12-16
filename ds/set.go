@@ -71,7 +71,7 @@ func (s *Set) removeNode(node *node) {
 	node = nil
 }
 
-// Add inserts into the set the new key-value pair. If the key
+// Add inserts into the set the new key-value object. If the key
 // exists already, update the value
 func (s *Set) Add(value interface{}) {
 	obj := newObject(value)
@@ -83,8 +83,8 @@ func (s *Set) Add(value interface{}) {
 	s.items[*obj] = node
 }
 
-// Remove erases from the set a pair from a given key. If the
-// provided key exists, the pair is returned. Otherwise, nil.
+// Remove erases from the set a object from a given key. If the
+// provided key exists, the object is returned. Otherwise, nil.
 func (s *Set) Remove(value interface{}) {
 	obj := newObject(value)
 	node, ok := s.items[*obj]
@@ -94,7 +94,7 @@ func (s *Set) Remove(value interface{}) {
 	s.removeNode(node)
 }
 
-// PopFirst removes and returns the first pair that
+// PopFirst removes and returns the first object that
 // entered the set
 func (s *Set) PopFirst() interface{} {
 	if s.foot == s.head {
@@ -105,13 +105,15 @@ func (s *Set) PopFirst() interface{} {
 	return value
 }
 
-// Elements returns an iterable slice of de-referenced pairs
+// Elements returns an iterable slice of de-referenced objects
 func (s *Set) Elements() []object {
-	var elements []object
+	elements := make([]object, s.Length())
+	counter := 0
 	item := s.head.next
 	for item != nil {
-		elements = append(elements, *item.object)
+		elements[counter] = *item.object
 		item = item.next
+		counter++
 	}
 	return elements
 }
