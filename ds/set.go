@@ -64,8 +64,11 @@ func (s *Set) removeNode(node *node) {
 	if node.next != nil {
 		node.next.prev = node.prev
 	}
+	node.prev = nil
+	node.next = nil
 	object := node.object
 	delete(s.items, *object)
+	node = nil
 }
 
 // Add inserts into the set the new key-value pair. If the key
