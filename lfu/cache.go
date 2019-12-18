@@ -56,6 +56,8 @@ func (c *Cache) removeNode(node *freqNode) {
 	}
 }
 
+// Inserts puts in the cache an element if it does not exist
+// already. Returns whether it was inserted.
 func (c *Cache) Insert(key, value interface{}) bool {
 	if _, ok := c.items[key]; ok {
 		// The key is already in the cache
@@ -81,11 +83,13 @@ func (c *Cache) Insert(key, value interface{}) bool {
 	return true
 }
 
+// Has returns whether the key element is cached
 func (c *Cache) Has(key interface{}) bool {
 	_, ok := c.items[key]
 	return ok
 }
 
+// FreqKey returns how many times has a key been seen
 func (c *Cache) FreqKey(key interface{}) (uint, error) {
 	node, ok := c.items[key]
 	if !ok {
@@ -94,6 +98,8 @@ func (c *Cache) FreqKey(key interface{}) (uint, error) {
 	return node.parent.value, nil
 }
 
+// Access returns the cached value for a key if exists. Otherwise,
+// return an error
 func (c *Cache) Access(key interface{}) (interface{}, error) {
 	node, ok := c.items[key]
 	if !ok {
@@ -115,6 +121,21 @@ func (c *Cache) Access(key interface{}) (interface{}, error) {
 	return node.value, nil
 }
 
+// Size returns how many elements are cached
 func (c *Cache) Size() uint {
 	return c.itemsCount
+}
+
+// Free resets to a clean state
+func (c *Cache) Free() {
+	item := c.freqHeadNode.next
+	for item != nil {
+		next := item.next
+		item.prev = nil
+		item.next = nil
+		item = next
+	}
+	c.itemsCount = 0
+	c.freqHeadNode = newHeadFreqNode()
+	c.items = make(map[cacheKey]*cacheNode, c.Capacity)
 }
