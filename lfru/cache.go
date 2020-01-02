@@ -1,4 +1,4 @@
-package lfu
+package lfru
 
 import (
 	"errors"
@@ -35,16 +35,16 @@ func NewCache(capacity uint) *Cache {
 
 func (c *Cache) evict() *cacheNode {
 	// Get node with lowest frequency
-	lfuNode := c.freqHeadNode.next
+	lfruNode := c.freqHeadNode.next
 	// remove a random node (for now) from it
-	node := lfuNode.Pop()
+	node := lfruNode.Pop()
 	// remove it from cache registry
 	delete(c.items, node)
 	// update counter accordingly
 	c.itemsCount--
 	// Remove the frequency node if it has run out of items
-	if lfuNode.Size() < 1 {
-		c.removeNode(lfuNode)
+	if lfruNode.Size() < 1 {
+		c.removeNode(lfruNode)
 	}
 	return node
 }

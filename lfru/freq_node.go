@@ -1,4 +1,4 @@
-package lfu
+package lfru
 
 import "mecachis/ds"
 

@@ -3,15 +3,15 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"mecachis/lfu"
+	"mecachis/lfru"
 	"net/http"
 	"time"
 )
 
 type cacheableFunc func(k string) int
 
-func withLFUCache(capacity uint, fn cacheableFunc) (cacheableFunc, func()) {
-	cache := lfu.NewCache(capacity)
+func withLFRUCache(capacity uint, fn cacheableFunc) (cacheableFunc, func()) {
+	cache := lfru.NewCache(capacity)
 	free := func() { cache.Free() }
 	decorator := func(key string) int {
 		value, err := cache.Access(key)
@@ -26,7 +26,7 @@ func withLFUCache(capacity uint, fn cacheableFunc) (cacheableFunc, func()) {
 }
 
 func main() {
-	requestCached, free := withLFUCache(2, func(web string) int {
+	requestCached, free := withLFRUCache(2, func(web string) int {
 		resp, _ := http.Get(web)
 		bytes, _ := ioutil.ReadAll(resp.Body)
 		return len(bytes)
