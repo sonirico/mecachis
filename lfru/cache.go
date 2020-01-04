@@ -8,7 +8,7 @@ import (
 type cacheKey interface{}
 type cacheValue interface{}
 
-// Cache represents the LRU cache
+// Cache represents the LFRU cache
 type Cache struct {
 	// Maximum capacity
 	Capacity uint
