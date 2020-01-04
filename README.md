@@ -21,7 +21,8 @@ there to adapt caching to a wider range of scenarios. What I would
 like to achieve with this repo is gaining deeper knowledge on data 
 structures and algorithms. Beyond that, it would be even nicer if:
 
-- More than 5 strategies are implemented [2/5]
+- More than 5 strategies are implemented [3/5]
+    - [x] LRU
     - [x] LFU
     - [x] LFRU
 - Caches are distributed over the network
