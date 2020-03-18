@@ -1,4 +1,4 @@
-.PHONY: test clean
+.PHONY: test clean format
 
 test:
 	go test ./...

@@ -1,164 +1,107 @@
 package lru
 
 import (
-	"bytes"
-	"errors"
-	"fmt"
+	mc "github.com/sonirico/mecachis"
+	"github.com/sonirico/mecachis/objects"
+
+	"container/list"
 )
 
-type cacheKey interface{}
-type cacheValue interface{}
-
-type cacheNode struct {
-	key   cacheKey
-	value cacheValue
-
-	next *cacheNode
-	prev *cacheNode
+// cache represents the LRU cache
+type lru struct {
+	// how much capacity in bytes
+	capacity  uint64
+	size      uint64
+	list      *list.List
+	cache     map[string]*list.Element
+	onEvicted mc.EvictionFn
 }
 
-func newCacheNode(key cacheKey, value cacheValue) *cacheNode {
-	return &cacheNode{key: key, value: value}
-}
-
-func (cn *cacheNode) String() string {
-	return fmt.Sprintf("<key: %v, value: %v>", cn.key, cn.value)
-}
-
-// Cache represents the LRU cache
-type Cache struct {
-	// Maximum capacity
-	Capacity uint
-	// How many elements are cached
-	itemsCount uint
-	// cache nodes hash-map
-	items map[cacheKey]*cacheNode
-	// pointer to the last inserted/access node
-	head *cacheNode
-	// pointer to the least recently updated node
-	foot *cacheNode
-}
-
-// NewCache initializes a new Cache by providing the maximum
+// New initializes a new cache by providing the maximum
 // capacity which, once reached, will provoke to evict the LRU
 // element
-func NewCache(capacity uint) *Cache {
-	cache := &Cache{
-		Capacity:   capacity,
-		itemsCount: 0,
-		items:      make(map[cacheKey]*cacheNode, capacity),
+func New(capacity uint64) *lru {
+	return &lru{
+		capacity: capacity,
+		size:     0,
+		list:     list.New(),
+		cache:    make(map[string]*list.Element),
 	}
-	return cache
 }
 
-func (c *Cache) getHead() *cacheNode {
-	return c.head.next
+func (c *lru) OnEvict(onEvicted mc.EvictionFn) {
+	c.onEvicted = onEvicted
 }
 
-// Inserts a node at the top
-func (c *Cache) insertNode(node *cacheNode) {
-	if c.head == nil {
-		c.head = node
-		c.foot = node
-	} else {
-		c.head.prev = node
-		node.next = c.head
-		c.head = node
+func (c *lru) evict() {
+	el := c.list.Back()
+	if el == nil {
+		return
 	}
-	c.items[node.key] = node
-	c.itemsCount++
-}
-
-func (c *Cache) getNodes() []cacheNode {
-	var nodes []cacheNode
-	item := c.head
-	for item != nil {
-		nodes = append(nodes, *item)
-		item = item.next
+	c.list.Remove(el)
+	entry := el.Value.(mc.Entry)
+	delete(c.cache, entry.Key())
+	c.size -= entry.Len()
+	if c.onEvicted != nil {
+		c.onEvicted(entry)
 	}
-	return nodes
-}
-
-func (c *Cache) evict() {
-	k := c.foot.key
-	nextFoot := c.foot.prev
-	c.removeNode(c.foot)
-	c.foot = nextFoot
-	delete(c.items, k)
-}
-
-func (c *Cache) removeNode(node *cacheNode) {
-	if node.prev != nil {
-		node.prev.next = node.next
-	}
-	if node.next != nil {
-		node.next.prev = node.prev
-	}
-	c.itemsCount--
+	return
 }
 
 // Insert puts a key-value pair into the cache. Returns whether the pair
 // was inserted. `false` means that the element was cached already
-func (c *Cache) Insert(key, value interface{}) bool {
-	if _, ok := c.items[key]; ok {
+func (c *lru) Insert(key string, value mc.Value) bool {
+	if el, ok := c.cache[key]; ok {
+		c.list.MoveToFront(el)
 		return false
 	}
-	if c.itemsCount >= c.Capacity {
-		c.evict()
+	if c.capacity > 0 {
+		// Limit configured
+		if c.size == 0 || c.size >= c.capacity {
+			c.evict()
+		}
 	}
-	node := newCacheNode(key, value)
-	c.insertNode(node)
+	entry := objects.NewEntry(key, value)
+	el := c.list.PushFront(entry)
+	c.cache[key] = el
+	c.size += entry.Len()
 	return true
 }
 
 // Access returns an element by key if it is within the cache already. Otherwise
 // it returns an error
-func (c *Cache) Access(key interface{}) (interface{}, error) {
-	node, ok := c.items[key]
+func (c *lru) Access(key string) (mc.Value, bool) {
+	el, ok := c.cache[key]
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("non existent key \"%v\"", key))
+		return nil, ok
 	}
-	if node != c.head {
-		// Skip reindex if requested key was the last one requested as well
-		c.removeNode(node)
-		c.insertNode(node)
-	}
-	return node.value, nil
+	c.list.MoveToFront(el)
+	entry := el.Value.(mc.Entry)
+	return entry.Value(), true
 }
 
 // Size returns the current length of the cache
-func (c *Cache) Size() uint {
-	return c.itemsCount
+func (c *lru) Size() uint64 {
+	return c.size
 }
 
-// Nodes returns the list of nodes ordered. Highest prioritized elements first
-func (c *Cache) Nodes() []cacheNode {
-	return c.getNodes()
-}
-
-// Dump returns the current state of the cache as string
-func (c *Cache) Dump() string {
-	var buf bytes.Buffer
-
-	for _, item := range c.getNodes() {
-		buf.WriteString(item.String())
-		buf.WriteString("\n")
+// Dump returns the current state of the cache
+func (c *lru) Dump() []mc.Entry {
+	var result []mc.Entry
+	el := c.list.Front()
+	for el != nil {
+		entry := el.Value.(mc.Entry)
+		result = append(result, entry)
+		el = el.Next()
 	}
-
-	return buf.String()
+	return result
 }
 
 // Free empties the cache, leaving it with the initial state
-func (c *Cache) Free() {
-	c.itemsCount = 0
-	c.items = make(map[cacheKey]*cacheNode, c.Capacity)
-	item := c.head
-	for item != nil {
-		next := item.next
-		item.prev = nil
-		item.next = nil
-		item = next
+func (c *lru) Free() {
+	for k, _ := range c.cache {
+		delete(c.cache, k)
 	}
-	c.head = nil
-	c.foot = nil
+	c.list.Init()
+	c.size = 0
 }
