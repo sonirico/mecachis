@@ -1,9 +1,9 @@
-package lfru
+package engines
 
-import "mecachis/ds"
+import "github.com/sonirico/mecachis/container"
 
 type freqNode struct {
-	set *ds.Set
+	set *container.Set
 	// the value representing the frequency
 	value uint
 	// pointers to compose the dll
@@ -14,7 +14,7 @@ type freqNode struct {
 func newHeadFreqNode() *freqNode {
 	node := &freqNode{
 		value: 0,
-		set:   ds.NewSet(),
+		set:   container.NewSet(),
 	}
 	node.prev = nil
 	node.next = newFreqNode(1, node, nil)
@@ -26,7 +26,7 @@ func newFreqNode(value uint, prev, next *freqNode) *freqNode {
 		next:  next,
 		prev:  prev,
 		value: value,
-		set:   ds.NewSet(),
+		set:   container.NewSet(),
 	}
 }
 

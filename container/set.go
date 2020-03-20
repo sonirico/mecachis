@@ -1,4 +1,4 @@
-package ds
+package container
 
 type object struct {
 	value interface{}

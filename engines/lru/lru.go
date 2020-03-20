@@ -1,24 +1,23 @@
-package lru
+package engines
 
 import (
-	mc "github.com/sonirico/mecachis"
-	"github.com/sonirico/mecachis/objects"
+	"github.com/sonirico/mecachis/engines"
 
 	"container/list"
 )
 
-// cache represents the LRU cache
+// cache represents the lru cache
 type lru struct {
 	// how much capacity in bytes
 	capacity  uint64
 	size      uint64
 	list      *list.List
 	cache     map[string]*list.Element
-	onEvicted mc.EvictionFn
+	onEvicted engines.EvictionFn
 }
 
 // New initializes a new cache by providing the maximum
-// capacity which, once reached, will provoke to evict the LRU
+// capacity which, once reached, will provoke to evict the lru
 // element
 func New(capacity uint64) *lru {
 	return &lru{
@@ -29,7 +28,7 @@ func New(capacity uint64) *lru {
 	}
 }
 
-func (c *lru) OnEvict(onEvicted mc.EvictionFn) {
+func (c *lru) OnEvict(onEvicted engines.EvictionFn) {
 	c.onEvicted = onEvicted
 }
 
@@ -39,7 +38,7 @@ func (c *lru) evict() {
 		return
 	}
 	c.list.Remove(el)
-	entry := el.Value.(mc.Entry)
+	entry := el.Value.(engines.Entry)
 	delete(c.cache, entry.Key())
 	c.size -= entry.Len()
 	if c.onEvicted != nil {
@@ -50,7 +49,7 @@ func (c *lru) evict() {
 
 // Insert puts a key-value pair into the cache. Returns whether the pair
 // was inserted. `false` means that the element was cached already
-func (c *lru) Insert(key string, value mc.Value) bool {
+func (c *lru) Insert(key string, value engines.Value) bool {
 	if el, ok := c.cache[key]; ok {
 		c.list.MoveToFront(el)
 		return false
@@ -61,7 +60,7 @@ func (c *lru) Insert(key string, value mc.Value) bool {
 			c.evict()
 		}
 	}
-	entry := objects.NewEntry(key, value)
+	entry := engines.NewEntry(key, value)
 	el := c.list.PushFront(entry)
 	c.cache[key] = el
 	c.size += entry.Len()
@@ -70,13 +69,13 @@ func (c *lru) Insert(key string, value mc.Value) bool {
 
 // Access returns an element by key if it is within the cache already. Otherwise
 // it returns an error
-func (c *lru) Access(key string) (mc.Value, bool) {
+func (c *lru) Access(key string) (engines.Value, bool) {
 	el, ok := c.cache[key]
 	if !ok {
 		return nil, ok
 	}
 	c.list.MoveToFront(el)
-	entry := el.Value.(mc.Entry)
+	entry := el.Value.(engines.Entry)
 	return entry.Value(), true
 }
 
@@ -86,11 +85,11 @@ func (c *lru) Size() uint64 {
 }
 
 // Dump returns the current state of the cache
-func (c *lru) Dump() []mc.Entry {
-	var result []mc.Entry
+func (c *lru) Dump() []engines.Entry {
+	var result []engines.Entry
 	el := c.list.Front()
 	for el != nil {
-		entry := el.Value.(mc.Entry)
+		entry := el.Value.(engines.Entry)
 		result = append(result, entry)
 		el = el.Next()
 	}
