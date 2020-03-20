@@ -1,4 +1,4 @@
-package lfu
+package engines
 
 type freqNode struct {
 	elements map[cacheKey]bool

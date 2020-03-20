@@ -1,7 +1,7 @@
-package lru
+package engines
 
 import (
-	mc "github.com/sonirico/mecachis"
+	"github.com/sonirico/mecachis/engines"
 	"reflect"
 	"testing"
 )
@@ -12,8 +12,8 @@ func (v cachevalue) Value() interface{} {
 	return v
 }
 
-func (v cachevalue) Len() int {
-	return len(v)
+func (v cachevalue) Len() uint64 {
+	return uint64(len(v))
 }
 
 type testNode struct {
@@ -37,7 +37,7 @@ func testCacheSizeEquals(t *testing.T, c *lru, expectedSize uint64) bool {
 	return true
 }
 
-func testNodeEquals(t *testing.T, en testNode, cn mc.Entry) bool {
+func testNodeEquals(t *testing.T, en testNode, cn engines.Entry) bool {
 	t.Helper()
 
 	if en.Key != cn.Key() {
@@ -74,7 +74,7 @@ func newCache(cap uint64, initialState []testNode) *lru {
 	return cache
 }
 
-func TestCacheLRUEvictsLRUifExceedingCapacity_Insert(t *testing.T) {
+func TestCacheLRU_EvictsLRUIfExceedingCapacity_Insert(t *testing.T) {
 	payload := []testNode{
 		{"a", cachevalue("1")}, // +2
 		{"b", cachevalue("2")}, // +2
@@ -149,7 +149,7 @@ func TestCacheLRU_OnEvicted(t *testing.T) {
 		{"a", cachevalue(1)}, // +2
 	}
 	keys := make([]string, 0)
-	onEvicted := func(v mc.Entry) {
+	onEvicted := func(v engines.Entry) {
 		keys = append(keys, v.Key())
 	}
 	cache := newCache(4, payload)
