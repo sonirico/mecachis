@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -15,11 +16,8 @@ func (h *Hub) handleAdd(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	g, created := h.getOrCreateGroup(ns)
 	if created {
 		// Non-existent group. Check for configuration params
-		// params := r.URL.Query()
-		// TODO: Hardcoded values
-		cap := uint64(2 << 10)
-		g.Cap = cap
-		g.Ct = engines.LRU
+		g.Cap = readCapacity(r)
+		g.Ct = readEngine(r)
 	}
 	content, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -71,7 +69,7 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	ns := uriParts[0]
 	key := uriParts[1]
-	ctx := context.WithValue(r.Context(), "ns", ns)
+	ctx := context.WithValue(context.Background(), "ns", ns)
 	ctx = context.WithValue(ctx, "key", key)
 	if r.Method == http.MethodGet {
 		h.handleGet(ctx, w, r)
@@ -82,4 +80,29 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.NotFound(w, r)
+	r.Context()
+}
+
+func readCapacity(r *http.Request) uint64 {
+	rawcap := r.URL.Query().Get("cap")
+	if rawcap == "" {
+		return uint64(2 << 10)
+	}
+	cap, err := strconv.Atoi(rawcap)
+	if err != nil {
+		return uint64(2 << 10)
+	}
+	return uint64(cap)
+}
+
+func readEngine(r *http.Request) engines.CacheType {
+	rawengi := r.URL.Query().Get("engi")
+	if rawengi == "" {
+		return engines.LRU
+	}
+	eng, ok := engines.LookupCacheType(rawengi)
+	if !ok {
+		return engines.LRU
+	}
+	return eng
 }
