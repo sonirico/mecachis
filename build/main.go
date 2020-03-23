@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/sonirico/mecachis"
-	"github.com/sonirico/mecachis/engines"
 	"net/http"
 )
 
@@ -13,8 +12,8 @@ func main() {
 	flag.IntVar(&port, "http", 8000, "http port")
 	flag.Parse()
 
-	cache := mecachis.NewCache(10, engines.LRU)
-	err := http.ListenAndServe(fmt.Sprintf(":%d", port), cache)
+	hub := mecachis.NewHub()
+	err := http.ListenAndServe(fmt.Sprintf(":%d", port), hub)
 	if err != nil {
 		panic(err)
 	}
