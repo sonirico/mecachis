@@ -3,7 +3,7 @@
 PORT ?= 8000
 
 test:
-	go test ./server ./engines ./container
+	go test -v ./container/... ./engines/... ./
 
 format:
 	go fmt ./...

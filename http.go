@@ -71,16 +71,16 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	key := uriParts[1]
 	ctx := context.WithValue(context.Background(), "ns", ns)
 	ctx = context.WithValue(ctx, "key", key)
-	if r.Method == http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
 		h.handleGet(ctx, w, r)
 		return
-	}
-	if r.Method == http.MethodPost {
+	case http.MethodPost:
 		h.handleAdd(ctx, w, r)
 		return
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
-	http.NotFound(w, r)
-	r.Context()
 }
 
 func readCapacity(r *http.Request) uint64 {
@@ -88,11 +88,11 @@ func readCapacity(r *http.Request) uint64 {
 	if rawcap == "" {
 		return uint64(2 << 10)
 	}
-	cap, err := strconv.Atoi(rawcap)
+	capacity, err := strconv.Atoi(rawcap)
 	if err != nil {
 		return uint64(2 << 10)
 	}
-	return uint64(cap)
+	return uint64(capacity)
 }
 
 func readEngine(r *http.Request) engines.CacheType {

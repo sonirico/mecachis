@@ -1,9 +1,8 @@
 package engines
 
 import (
-	"github.com/sonirico/mecachis/engines"
-
 	"container/list"
+	"github.com/sonirico/mecachis/engines"
 )
 
 // cache represents the lru cache
@@ -54,16 +53,16 @@ func (c *lru) Insert(key string, value engines.Value) bool {
 		c.list.MoveToFront(el)
 		return false
 	}
-	if c.capacity > 0 {
-		// Limit configured
-		if c.size == 0 || c.size >= c.capacity {
-			c.evict()
-		}
-	}
 	entry := engines.NewEntry(key, value)
 	el := c.list.PushFront(entry)
 	c.cache[key] = el
 	c.size += entry.Len()
+	if c.capacity > 0 {
+		// Limit configured
+		for c.size > c.capacity {
+			c.evict()
+		}
+	}
 	return true
 }
 
