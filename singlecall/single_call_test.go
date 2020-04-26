@@ -12,7 +12,7 @@ func TestSingleCall_Run_ReturnsValue(t *testing.T) {
 	var c int32 = 0
 	var val interface{}
 	var err error
-	sc := NewSingleCall()
+	sc := New()
 	wg := new(sync.WaitGroup)
 	fn := func() (interface{}, error) {
 		time.Sleep(1 * time.Second) // let next calls to be enqueued
@@ -41,7 +41,7 @@ func TestSingleCall_Run_ReturnsValue(t *testing.T) {
 func TestSingleCall_Run_ReturnsError(t *testing.T) {
 	var val interface{}
 	var err error
-	sc := NewSingleCall()
+	sc := New()
 	wg := new(sync.WaitGroup)
 	fn := func() (interface{}, error) {
 		time.Sleep(1 * time.Second) // let next calls to be enqueued

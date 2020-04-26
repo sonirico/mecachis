@@ -18,7 +18,7 @@ type SingleCall struct {
 	calls map[key]*call
 }
 
-func NewSingleCall() *SingleCall {
+func New() *SingleCall {
 	return &SingleCall{
 		l:     sync.Mutex{},
 		calls: make(map[key]*call),
